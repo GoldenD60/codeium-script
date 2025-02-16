@@ -1,0 +1,9 @@
+{
+	"pack": {
+		"name": "Codeium Test Main",
+		"description": "Codeium Test"
+	},
+	"targets": [
+		"source/**"
+	]
+}
