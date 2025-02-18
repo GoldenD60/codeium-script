@@ -8,11 +8,11 @@ import com.google.gson.stream.JsonWriter;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.*;
 
 import static org.goldend60.codeiumscript.Logger.exception;
 import static org.goldend60.codeiumscript.Logger.info;
+import static org.goldend60.codeiumscript.Util.recursivelyListDir;
 
 public class Project {
 	public Project(File project) {
@@ -23,7 +23,7 @@ public class Project {
 					exception("Project failed to compile. See above for more details.");
 			}
 			catch (IOException error) {
-				exception(error);
+				exception("An IOException occured. Details:", error.getLocalizedMessage());
 			}
 		}
 	}
@@ -47,16 +47,28 @@ public class Project {
 		File output = Path.of(project.getPath(), root.get("output").getAsString()).toFile();
 		if (output.mkdir()) info("Output directory does not exist, creating directory...");
 
-		info(pack, targets, output);
 		JsonWriter writer = new JsonWriter(new FileWriter(Path.of(output.getPath(), "pack.mcmeta").toFile()));
 		writer
 				.beginObject().name("pack")
 				.jsonValue(pack.toString())
 				.endObject().close();
 
+		List<File> targetFiles = new LinkedList<>();
 		for (JsonElement target : targets) {
 			String path = target.getAsString();
-			info(path);
+			String subpath = path.substring(0, path.length() - 2);
+			if (path.endsWith("/**"))
+				targetFiles.addAll(recursivelyListDir(Path.of(project.getPath(), subpath).toFile()));
+			else if (path.endsWith("/*"))
+				targetFiles.addAll(List.of(Objects.requireNonNull(Path.of(project.getPath(), subpath).toFile().listFiles())));
+			else if (Path.of(project.getPath(), path).toFile().isDirectory())
+				return exception("Directory not allowed in project.json \"targets\": \"" + path + "\". Use \"/*\" or \"/**\" to add a directory.");
+			else targetFiles.add(Path.of(project.getPath(), path).toFile());
+		}
+
+		for (File file : targetFiles) {
+			Lexer lexer = new Lexer(file);
+			if (!lexer.tokenize()) return false;
 		}
 
 		return true;
