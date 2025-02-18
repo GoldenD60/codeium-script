@@ -1,5 +1,6 @@
 package org.goldend60.codeiumscript;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,32 +35,81 @@ public class Lexer {
 
 	public boolean tokenize() {
 		String buf = "";
+		String identifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
 		while (index < content.length()) {
-			char c = consume();
-			if (Character.isLetter(c)) {
-				buf += c;
-				while (index < content.length() && Character.isLetterOrDigit(peek()))
-					buf += consume();
-				switch (buf) {
-					case "func": {
-						tokens.add(new Token(TokenType.FUNC_DEF));
-						buf = "";
-						break;
+			char c = peek();
+			if (("" + c).isBlank()) {
+				consume();
+				continue;
+			}
+			if (Character.isDigit(c)) {
+				// TODO: Integers
+			} else {
+				if (identifier.contains(""+c)) {
+					while (index < content.length() && identifier.contains("" + peek())) {
+						buf += consume();
 					}
-					default: {
-						return syntaxError(buf, this);
+					switch (buf) {
+						case "func": {
+							tokens.add(new Token(TokenType.FUNC_DEF));
+							break;
+						}
+						default: {
+							tokens.add(new Token(TokenType.IDENT, buf));
+							break;
+						}
 					}
+					buf = "";
+					index--;
+				} else {
+					switch (c) {
+						case '"': {
+							consume();
+							boolean escaped = false;
+							while (index < content.length())
+							{
+								if (peek() == '"')
+								{
+									if (!escaped) break;
+									escaped = false;
+								}
+								if (peek() == '\\')
+									escaped = !escaped;
+								buf += consume();
+							}
+							if (index == content.length()) unclosedQuote(index - buf.length() - 1, this);
+							tokens.add(new Token(TokenType.DOUBLE_QUOT, buf));
+							break;
+						}
+						case ';': {
+							tokens.add(new Token(TokenType.SEMI));
+							break;
+						}
+ 						case '(': {
+							tokens.add(new Token(TokenType.LEFT_PAREN));
+							break;
+						}
+						case ')': {
+							tokens.add(new Token(TokenType.RIGHT_PAREN));
+							break;
+						}
+						case '{': {
+							tokens.add(new Token(TokenType.LEFT_BRACE));
+							break;
+						}
+						case '}': {
+							tokens.add(new Token(TokenType.RIGHT_BRACE));
+							break;
+						}
+						default:
+							return syntaxError("" + c, this);
+					}
+					buf = "";
 				}
 			}
-			/*else if (Character.isDigit(c)) {
-				buf += c;
-				while (index < content.length() && Character.isDigit(peek()))
-					buf += consume();
-				tokens.add(new Token(TokenType.INT, buf));
-				buf = "";
-			}*/
+			index++;
 		}
-		info(tokens);
+		info("Tokens:", tokens);
 		return true;
 	}
 
@@ -86,6 +136,10 @@ public class Lexer {
 		FUNC_DEF,
 		IDENT,
 		LEFT_PAREN,
-		RIGHT_PAREN
+		RIGHT_PAREN,
+		LEFT_BRACE,
+		RIGHT_BRACE,
+		SEMI,
+		DOUBLE_QUOT
 	}
 }
