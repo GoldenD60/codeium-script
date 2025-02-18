@@ -1,9 +1,11 @@
 {
+	"name": "Codeium Test Main",       // The name of the pack
 	"pack": {
-		"name": "Codeium Test Main",
-		"description": "Codeium Test"
+		"description": "Codeium Test", // The pack description
+		"pack_format": 61              // The pack format
 	},
-	"targets": [
+	"targets": [                       // The scripts to build
 		"source/**"
-	]
+	],
+	"output": "build/"                 // Where to output the build files
 }
