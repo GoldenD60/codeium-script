@@ -69,6 +69,9 @@ public class Project {
 		for (File file : targetFiles) {
 			Lexer lexer = new Lexer(file);
 			if (!lexer.tokenize()) return false;
+
+			Parser parser = new Parser(lexer);
+			if (!parser.parse()) return false;
 		}
 
 		return true;

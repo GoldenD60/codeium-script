@@ -1,10 +1,9 @@
 package org.goldend60.codeiumscript;
 
+import javax.sound.sampled.Line;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Logger {
 	public static final String ANSI_RESET = "\u001B[0m";
@@ -21,7 +20,7 @@ public class Logger {
 		System.out.printf("%s[codeium] %s" + text + "%s%n", ANSI_CYAN, color, Arrays.stream(message).map(Object::toString).collect(Collectors.joining(" ")), ANSI_RESET);
 	}
 
-	private static LineInfo getLineInfo(int index, int offset, String text) {
+	private static LineInfo getLineInfo(int index, int offsetLength, String text) {
 		List<String> lines = Arrays.stream(text.split("\n", -1)).toList();
 
 		int charCount = 0;
@@ -29,8 +28,8 @@ public class Logger {
 			int lineLength = lines.get(i).length() + 1;
 
 			if (index < charCount + lineLength) {
-				int chr = index - charCount - offset;
 				int tabCount = lines.get(i).split("\t").length - 1;
+				int chr = index - charCount - (offsetLength > 1 ? offsetLength : 0);
 				return new LineInfo(i, chr, tabCount, lines);
 			}
 
@@ -41,21 +40,35 @@ public class Logger {
 
 	private record LineInfo(int line, int chr, int tabCount, List<String> lines) {}
 
+	private static void showErrorPosition(LineInfo inf, int length) {
+		String line = inf.lines.get(inf.line);
+		exception(line);
+		exception(line.substring(0, inf.chr).replaceAll("[^\\t]", " ") + "^".repeat(length));
+	}
+
 	public static boolean unclosedQuote(int index, Lexer lexer) {
 		LineInfo inf = getLineInfo(index, 0, lexer.content);
 		assert inf != null;
-		exception("SyntaxError: Unclosed quote at line", inf.line + 1, "char", inf.chr, "in .(" + lexer.file.getName() + ":" + (inf.line + 1) + ")");
-		exception(inf.lines.get(inf.line));
-		exception("\t".repeat(inf.tabCount) + " ".repeat(inf.chr - inf.tabCount) + "^");
+		exception("SyntaxError: Unclosed quote at line", inf.line + 1, "char", inf.chr + 1, "in .(" + lexer.file.getName() + ":" + (inf.line + 1) + ")");
+		showErrorPosition(inf, 1);
+		return false;
+	}
+
+	public static boolean parserError(Lexer.Token unexpected, String expected, Lexer lexer) {
+		int len = unexpected.text.length();
+		LineInfo inf = getLineInfo(unexpected.index, len, lexer.content);
+		assert inf != null;
+		exception("ParserError: Unexpected \"" + unexpected.text + "\", expected", expected, "at line", inf.line + 1, "char", inf.chr + 1, "in .(" + lexer.file.getName() + ":" + (inf.line + 1) + ")");
+		showErrorPosition(inf, len);
 		return false;
 	}
 
 	public static boolean syntaxError(String anomaly, Lexer lexer) {
-		LineInfo inf = getLineInfo(lexer.index, -anomaly.length(), lexer.content);
+		int len = anomaly.length();
+		LineInfo inf = getLineInfo(lexer.index, len, lexer.content);
 		assert inf != null;
-		exception("SyntaxError: Unexpected \"" + anomaly + "\" at line", inf.line + 1, "char", inf.chr, "in .(" + lexer.file.getName() + ":" + (inf.line + 1) + ")");
-		exception(inf.lines.get(inf.chr));
-		exception("\t".repeat(inf.tabCount) + " ".repeat(inf.chr - inf.tabCount) + "^".repeat(anomaly.length()));
+		exception("SyntaxError: Unexpected \"" + anomaly + "\" at line", inf.line + 1, "char", inf.chr + 1, "in .(" + lexer.file.getName() + ":" + (inf.line + 1) + ")");
+		showErrorPosition(inf, len);
 		return false;
 	}
 

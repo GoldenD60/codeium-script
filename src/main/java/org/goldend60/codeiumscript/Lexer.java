@@ -1,6 +1,5 @@
 package org.goldend60.codeiumscript;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,7 +16,7 @@ public class Lexer {
 
 	public Lexer(File file) throws IOException {
 		this.file = file;
-		this.content = Files.readString(file.toPath());
+		this.content = Files.readString(this.file.toPath());
 	}
 
 	private char peek(int offset) {
@@ -51,11 +50,15 @@ public class Lexer {
 					}
 					switch (buf) {
 						case "func": {
-							tokens.add(new Token(TokenType.FUNC_DEF));
+							tokens.add(new Token(this, buf, TokenType.FUNC_DEF));
+							break;
+						}
+						case "player": {
+							tokens.add(new Token(this, buf, TokenType.PLAYER));
 							break;
 						}
 						default: {
-							tokens.add(new Token(TokenType.IDENT, buf));
+							tokens.add(new Token(this, buf, TokenType.IDENT, buf));
 							break;
 						}
 					}
@@ -68,37 +71,50 @@ public class Lexer {
 							boolean escaped = false;
 							while (index < content.length())
 							{
-								if (peek() == '"')
-								{
-									if (!escaped) break;
-									escaped = false;
-								}
-								if (peek() == '\\')
+								if (peek() == '"' && !escaped)
+									break;
+								if (peek() == '\\' || peek(-1) == '\\')
 									escaped = !escaped;
 								buf += consume();
 							}
-							if (index == content.length()) unclosedQuote(index - buf.length() - 1, this);
-							tokens.add(new Token(TokenType.DOUBLE_QUOT, buf));
+							if (index == content.length()) return unclosedQuote(index - buf.length() - 1, this);
+							tokens.add(new Token(this, buf, TokenType.DOUBLE_QUOT, buf));
 							break;
 						}
 						case ';': {
-							tokens.add(new Token(TokenType.SEMI));
+							tokens.add(new Token(this, ""+c, TokenType.SEMI));
 							break;
 						}
  						case '(': {
-							tokens.add(new Token(TokenType.LEFT_PAREN));
+							tokens.add(new Token(this, ""+c, TokenType.LEFT_PAREN));
 							break;
 						}
 						case ')': {
-							tokens.add(new Token(TokenType.RIGHT_PAREN));
+							tokens.add(new Token(this, ""+c, TokenType.RIGHT_PAREN));
 							break;
 						}
 						case '{': {
-							tokens.add(new Token(TokenType.LEFT_BRACE));
+							tokens.add(new Token(this, ""+c, TokenType.LEFT_BRACE));
 							break;
 						}
 						case '}': {
-							tokens.add(new Token(TokenType.RIGHT_BRACE));
+							tokens.add(new Token(this, ""+c, TokenType.RIGHT_BRACE));
+							break;
+						}
+						case '.': {
+							tokens.add(new Token(this, ""+c, TokenType.MEMBER_ACCESS));
+							break;
+						}
+						case '/': {
+							consume();
+							if (index < content.length() && peek() == '/') {
+								while (peek() != '\n')
+									consume();
+							}
+							else {
+								index--;
+								return syntaxError("" + c, this);
+							}
 							break;
 						}
 						default:
@@ -107,22 +123,27 @@ public class Lexer {
 					buf = "";
 				}
 			}
-			index++;
+			consume();
 		}
-		info("Tokens:", tokens);
 		return true;
 	}
 
 	public static class Token {
 		TokenType type;
 		String value = null;
+		String text;
+		int index;
 
-		public Token(TokenType type, String value) {
+		public Token(Lexer lexer, String text, TokenType type, String value) {
+			this.text = text;
+			this.index = lexer.index;
 			this.type = type;
 			this.value = value;
 		}
 
-		public Token(TokenType type) {
+		public Token(Lexer lexer, String text, TokenType type) {
+			this.text = text;
+			this.index = lexer.index;
 			this.type = type;
 		}
 
@@ -140,6 +161,8 @@ public class Lexer {
 		LEFT_BRACE,
 		RIGHT_BRACE,
 		SEMI,
-		DOUBLE_QUOT
+		DOUBLE_QUOT,
+		MEMBER_ACCESS,
+		PLAYER
 	}
 }
