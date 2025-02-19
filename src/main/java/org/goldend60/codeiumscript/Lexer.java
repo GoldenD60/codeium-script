@@ -53,8 +53,8 @@ public class Lexer {
 							tokens.add(new Token(this, buf, TokenType.FUNC_DEF));
 							break;
 						}
-						case "player": {
-							tokens.add(new Token(this, buf, TokenType.PLAYER));
+						case "namespace": {
+							tokens.add(new Token(this, buf, TokenType.NAMESPACE));
 							break;
 						}
 						default: {
@@ -108,7 +108,7 @@ public class Lexer {
 						case '/': {
 							consume();
 							if (index < content.length() && peek() == '/') {
-								while (peek() != '\n')
+								while ((index + 1) < content.length() && peek() != '\n')
 									consume();
 							}
 							else {
@@ -163,6 +163,6 @@ public class Lexer {
 		SEMI,
 		DOUBLE_QUOT,
 		MEMBER_ACCESS,
-		PLAYER
+		NAMESPACE
 	}
 }

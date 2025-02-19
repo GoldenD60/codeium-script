@@ -69,9 +69,12 @@ public class Project {
 		for (File file : targetFiles) {
 			Lexer lexer = new Lexer(file);
 			if (!lexer.tokenize()) return false;
+			if (lexer.tokens.isEmpty()) continue;
 
-			Parser parser = new Parser(lexer);
-			if (!parser.parse()) return false;
+			Parser parser = new Parser(lexer, output);
+			List<Node> tree = parser.parseAll();
+			if (!parser.succeeded) return false;
+			info(tree);
 		}
 
 		return true;
