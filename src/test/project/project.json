@@ -7,5 +7,5 @@
 	"targets": [                       // The scripts to build
 		"source/**"
 	],
-	"output": "build/"                 // Where to output the build files
+	"output": "D:\\Modrinth\\profiles\\1.21.4\\saves\\Redstone World\\datapacks\\Codeium Test" // Where to output the build files
 }

@@ -1,8 +1,9 @@
-package org.goldend60.codeiumscript;
+package org.goldend60.codeiumscript.old;
 
+
+import org.goldend60.codeiumscript.Project;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 
 public class Main {
 	public static void main(String[] args) {

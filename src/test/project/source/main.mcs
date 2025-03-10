@@ -1,6 +1,11 @@
 namespace hello {
-	func hi() {
-    	player.sendMessage("Greetings, player!"); // Sends a message to the player
-    	player.f.f.f.f.f.sendMessage("Greetings, player!"); // Sends a message to the player
+	void hi() {
+    	@s.tell("Greetings, player!"); // Sends a message to the player
+    	@s.kill();
+    	world.kill(@a);
+    }
+
+    void lol() {
+
     }
 }

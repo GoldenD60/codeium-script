@@ -5,13 +5,24 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.RuleNode;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.io.*;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
-import static org.goldend60.codeiumscript.Logger.exception;
-import static org.goldend60.codeiumscript.Logger.info;
+import static org.goldend60.codeiumscript.old.Logger.exception;
+import static org.goldend60.codeiumscript.old.Logger.info;
 import static org.goldend60.codeiumscript.Util.recursivelyListDir;
 
 public class Project {
@@ -44,10 +55,19 @@ public class Project {
 
 		JsonObject pack = root.getAsJsonObject("pack");
 		JsonArray targets = root.getAsJsonArray("targets");
-		File output = Path.of(project.getPath(), root.get("output").getAsString()).toFile();
-		if (output.mkdir()) info("Output directory does not exist, creating directory...");
 
-		JsonWriter writer = new JsonWriter(new FileWriter(Path.of(output.getPath(), "pack.mcmeta").toFile()));
+		Path output = project.toPath().resolve(Path.of(root.get("output").getAsString()));
+		if (output.toFile().exists()) {
+			try (Stream<Path> dirStream = Files.walk(output)) {
+				dirStream
+						.map(Path::toFile)
+						.sorted(Comparator.reverseOrder())
+						.forEach(File::delete);
+			}
+		}
+		output.toFile().mkdirs();
+
+		JsonWriter writer = new JsonWriter(new FileWriter(Path.of(output.toString(), "pack.mcmeta").toFile()));
 		writer
 				.beginObject().name("pack")
 				.jsonValue(pack.toString())
@@ -67,14 +87,12 @@ public class Project {
 		}
 
 		for (File file : targetFiles) {
-			Lexer lexer = new Lexer(file);
-			if (!lexer.tokenize()) return false;
-			if (lexer.tokens.isEmpty()) continue;
-
-			Parser parser = new Parser(lexer, output);
-			List<Node> tree = parser.parseAll();
-			if (!parser.succeeded) return false;
-			info(tree);
+			CharStream charStream = CharStreams.fromPath(file.toPath());
+			codeiumLexer lexer = new codeiumLexer(charStream);
+			CommonTokenStream stream = new CommonTokenStream(lexer);
+			codeiumParser parser = new codeiumParser(stream);
+			CodeGenerator gen = new CodeGenerator(output);
+			parser.prog().enterRule(gen);
 		}
 
 		return true;

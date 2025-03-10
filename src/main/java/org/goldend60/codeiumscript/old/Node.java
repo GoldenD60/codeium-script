@@ -1,17 +1,27 @@
-package org.goldend60.codeiumscript;
+package org.goldend60.codeiumscript.old;
 
 import java.util.LinkedList;
 import java.util.List;
 
 public class Node {
 	public static class TopLevelStatement extends Node {}
+	public static class NamespaceStatement extends Node {}
 	public static class Instruction extends Node {}
 	public static class Value extends Node {}
 	public static class LiteralValue extends Value {}
 
-	public static class Namespace extends Node {
-		public String name;
+	public static class Prog extends Node {
 		public List<TopLevelStatement> statements = new LinkedList<>();
+
+		@Override
+		public String toString() {
+			return "prog: " + statements;
+		}
+	}
+
+	public static class Namespace extends TopLevelStatement {
+		public String name;
+		public List<NamespaceStatement> statements = new LinkedList<>();
 
 		@Override
 		public String toString() {
@@ -19,7 +29,7 @@ public class Node {
 		}
 	}
 
-	public static class FunctionDefinition extends TopLevelStatement {
+	public static class FunctionDefinition extends NamespaceStatement {
 		public String name;
 		public List<Instruction> instructions = new LinkedList<>();
 

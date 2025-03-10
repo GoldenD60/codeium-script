@@ -1,4 +1,4 @@
-package org.goldend60.codeiumscript;
+package org.goldend60.codeiumscript.old;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.goldend60.codeiumscript.Logger.*;
+import static org.goldend60.codeiumscript.old.Logger.*;
 
 public class Lexer {
 	public final File file;
@@ -49,8 +49,8 @@ public class Lexer {
 						buf += consume();
 					}
 					switch (buf) {
-						case "func": {
-							tokens.add(new Token(this, buf, TokenType.FUNC_DEF));
+						case "void": {
+							tokens.add(new Token(this, buf, TokenType.VOID));
 							break;
 						}
 						case "namespace": {
@@ -154,7 +154,7 @@ public class Lexer {
 	}
 
 	public enum TokenType {
-		FUNC_DEF,
+		VOID,
 		IDENT,
 		LEFT_PAREN,
 		RIGHT_PAREN,

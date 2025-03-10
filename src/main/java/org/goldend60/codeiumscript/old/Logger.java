@@ -1,6 +1,5 @@
-package org.goldend60.codeiumscript;
+package org.goldend60.codeiumscript.old;
 
-import javax.sound.sampled.Line;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,8 +72,7 @@ public class Logger {
 	}
 
 	public static boolean exception(Object... message) {
-		print("ERROR: %s", ANSI_RED, message);
-		return false;
+		throw new RuntimeException(ANSI_RED + "ERROR: " + Arrays.stream(message).map(Object::toString).collect(Collectors.joining(" ")));
 	}
 
 	public static void info(Object... message) {
