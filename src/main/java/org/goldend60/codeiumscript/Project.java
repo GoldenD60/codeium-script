@@ -8,21 +8,16 @@ import com.google.gson.stream.JsonWriter;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ErrorNode;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.RuleNode;
-import org.antlr.v4.runtime.tree.TerminalNode;
+import org.goldend60.codeiumscript.antlr.codeiumLexer;
+import org.goldend60.codeiumscript.antlr.codeiumParser;
 
 import java.io.*;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.goldend60.codeiumscript.old.Logger.exception;
-import static org.goldend60.codeiumscript.old.Logger.info;
+import static org.goldend60.codeiumscript.Logger.exception;
 import static org.goldend60.codeiumscript.Util.recursivelyListDir;
 
 public class Project {
@@ -39,7 +34,7 @@ public class Project {
 		}
 	}
 
-	boolean projectDirectory(File project) throws IOException {
+	private boolean projectDirectory(File project) throws IOException {
 		File[] files = project.listFiles();
 		if (files == null) return exception("Failed to list files in project directory!");
 		if (files.length == 0) return exception("No files in project directory!");
@@ -91,7 +86,7 @@ public class Project {
 			codeiumLexer lexer = new codeiumLexer(charStream);
 			CommonTokenStream stream = new CommonTokenStream(lexer);
 			codeiumParser parser = new codeiumParser(stream);
-			CodeGenerator gen = new CodeGenerator(output);
+			ProgParser gen = new ProgParser(output);
 			parser.prog().enterRule(gen);
 		}
 

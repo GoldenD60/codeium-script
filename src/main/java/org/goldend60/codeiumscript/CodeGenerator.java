@@ -1,95 +1,82 @@
 package org.goldend60.codeiumscript;
 
-import org.antlr.v4.runtime.tree.TerminalNode;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Objects;
 
-class CodeGenerator extends codeiumBaseListener {
-	private String namespace = "unknown";
-	private final Path root;
-	private Path out;
-	private File func;
-	private FileWriter wfunc;
+public class CodeGenerator {
+	public final String namespace;
+	public final String name;
+	public final String nbt;
+	public final String scoreboard;
+	public HashMap<String, String> variables = new HashMap<>();
 
-	public CodeGenerator(Path out) {
-		this.root = out;
+	public CodeGenerator(String namespace, String name) {
+		this.namespace = namespace;
+		this.name = name;
+		this.nbt = namespace + ":" + name;
+		this.scoreboard = namespace + "." + name;
 	}
 
-	private String build(String... command) {
+	public static String build(String... command) {
 		return String.join(" ", command) + "\n";
 	}
 
-	@Override
-	public void enterProg(codeiumParser.ProgContext ctx) {
-		ctx.namespace().forEach(n -> n.enterRule(this));
-		if (ctx.fileNamespace() != null)
-			ctx.fileNamespace().enterRule(this);
-		ctx.toplevel().forEach(n -> n.enterRule(this));
-	}
-
-	private void setNamespace(String namespace) {
-		this.namespace = namespace;
-		this.out = Path.of(this.root.toString(), "data", this.namespace, "function");
-		this.out.toFile().mkdirs();
-	}
-
-	@Override
-	public void enterFileNamespace(codeiumParser.FileNamespaceContext ctx) {
-		this.setNamespace(ctx.IDENT().getText());
-	}
-
-	@Override
-	public void enterNamespace(codeiumParser.NamespaceContext ctx) {
-		this.setNamespace(ctx.IDENT().getText());
-		ctx.toplevel().forEach(n -> n.enterRule(this));
-	}
-
-	@Override
-	public void exitNamespace(codeiumParser.NamespaceContext ctx) {
-		this.out = this.root;
-		this.namespace = "";
-	}
-
-	@Override
-	public void enterToplevel(codeiumParser.ToplevelContext ctx) {
-		ctx.funcDef().enterRule(this);
-	}
-
-	@Override
-	public void enterFuncDef(codeiumParser.FuncDefContext ctx) {
-		try {
-			this.func = Path.of(this.out.toString(), ctx.declaration(0).IDENT(1).getText() + ".mcfunction").toFile();
-			this.wfunc = new FileWriter(this.func);
-			ctx.instruction().forEach(n -> n.enterRule(this));
-			ctx.exitRule(this);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+	public static String generate() {
+		String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+		StringBuilder generated = new StringBuilder();
+		for (int i = 0; i < 8; i++) {
+			generated.append(chars.charAt((int) (Math.random() * chars.length())));
 		}
+		return generated.toString();
 	}
 
-	@Override
-	public void enterInstruction(codeiumParser.InstructionContext ctx) {
-		try {
-			this.wfunc.append(this.build("#", ctx.getText()));
-			// TODO: Parse Instruction
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+	public String generateVariable(String type) {
+		String generate = generate();
+		variables.put(generate, type);
+		return generate;
 	}
 
-	@Override
-	public void exitFuncDef(codeiumParser.FuncDefContext ctx) {
-		try {
-			this.func = null;
-			this.wfunc.close();
-			this.wfunc = null;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+	public String getType(String variable) {
+		return variables.get(variable);
+	}
+
+	public String set(String variable, int value) {
+		return build("scoreboard", "players", "set", variable, this.scoreboard, "" + value);
+	}
+
+	public String add(String variable, int value) {
+		return build("scoreboard", "players", "add", variable, this.scoreboard, "" + value);
+	}
+
+	public String sub(String variable, int value) {
+		return build("scoreboard", "players", "remove", variable, this.scoreboard, "" + value);
+	}
+
+	public String op(String lh, String rh, String op) {
+		return build("scoreboard", "players", "operation", lh, this.scoreboard, op, rh, this.scoreboard);
+	}
+
+	public String setDataToScoreboard(String path, String type, String variable) {
+		// execute store result storage a:b c int 1 run scoreboard players get c a.b
+		return build("execute", "store", "result", "storage", this.nbt, path, type, "1", "run", "scoreboard", "players", "get", variable, this.scoreboard);
+	}
+
+	public String setScoreboardToData(String path, String type, String variable) {
+		// execute store result score c a.b run data get storage a:b c
+		if (!Objects.equals(type, "int")) {
+			throw new RuntimeException("Invalid type");
 		}
+		return build("execute", "store", "result", "score", variable, this.scoreboard, "run", "data", "get", "storage", this.nbt, path);
+	}
+
+	public void declareVariable(String name, String type) {
+		if (variables.containsKey(name)) {
+			throw new RuntimeException("Variable \"" + name + "\" already exists");
+		}
+		variables.put(name, type);
+	}
+
+	public String create() {
+		return build("scoreboard", "objectives", "add", this.scoreboard, "dummy");
 	}
 }

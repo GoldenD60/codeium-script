@@ -9,7 +9,7 @@
           <option name="outputDir" value="D:\Minecraft Dev Mods\codeium-script\src\main\java" />
           <option name="libDir" value="" />
           <option name="encoding" value="" />
-          <option name="pkg" value="org.goldend60.codeiumscript" />
+          <option name="pkg" value="org.goldend60.codeiumscript.antlr" />
           <option name="language" value="" />
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>

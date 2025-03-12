@@ -1,7 +1,4 @@
-package org.goldend60.codeiumscript.old;
-
-
-import org.goldend60.codeiumscript.Project;
+package org.goldend60.codeiumscript;
 
 import java.io.File;
 
