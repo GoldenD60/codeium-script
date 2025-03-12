@@ -11,23 +11,26 @@ import java.util.HashMap;
 import java.util.Objects;
 
 public class FunctionParser extends codeiumBaseVisitor<String> {
+	private final String namespace;
 	private final Path out;
 	private CodeGenerator gen;
-	private String exprSubject = "";
+	private String exprVar;
 	private String exprType;
 
 	public FunctionParser(String namespace, Path out) {
+		this.namespace = namespace;
 		this.out = out;
-		this.gen = new CodeGenerator(namespace, "runtime");
 	}
 
 	@Override
 	public String visitTypeFunction(codeiumParser.TypeFunctionContext ctx) {
+		this.gen = new CodeGenerator(namespace, ctx.decl(0).Ident().getText());
 		return this.gen.create() + super.visitTypeFunction(ctx);
 	}
 
 	@Override
 	public String visitLoadFunction(codeiumParser.LoadFunctionContext ctx) {
+		this.gen = new CodeGenerator(namespace, "load");
 		String text = this.gen.create() + super.visitLoadFunction(ctx);
 		try {
 			File file = Path.of(this.out.toString(), "load.mcfunction").toFile();
@@ -50,20 +53,45 @@ public class FunctionParser extends codeiumBaseVisitor<String> {
 	}
 
 	@Override
+	public String visitReturn(codeiumParser.ReturnContext ctx) {
+		return ctx.expr().accept(this) + this.gen.returnVariable(this.exprVar);
+	}
+
+	@Override
+	public String visitInstAssignment(codeiumParser.InstAssignmentContext ctx) {
+		String name = ctx.Ident().getText();
+		String type = this.gen.getType(name);
+		String var = this.gen.generateVariable(type);
+		return	ctx.expr().accept(this) + this.gen.setScoreboardToData(name, type, var) +
+				this.gen.op(var, this.exprVar, ctx.op.getText()) +
+				this.gen.setDataToScoreboard(name, type, var);
+	}
+
+	@Override
 	public String visitInstDeclaration(codeiumParser.InstDeclarationContext ctx) {
 		this.exprType = ctx.decl().type().getText();
 		String name = ctx.decl().Ident().getText();
 		this.gen.declareVariable(name, this.exprType);
 
 		String text = ctx.expr().accept(this);
-		return text + this.gen.setDataToScoreboard(name, this.exprType, this.exprSubject);
+		return text + this.gen.setDataToScoreboard(name, this.exprType, this.exprVar);
+	}
+
+	@Override
+	public String visitIdentExpr(codeiumParser.IdentExprContext ctx) {
+		if (Objects.equals(this.exprType, "int")) {
+			String name = ctx.Ident().getText();
+			this.exprVar = this.gen.generateVariable("int");
+			return this.gen.setScoreboardToData(name, "int", this.exprVar);
+		}
+		throw new RuntimeException("Invalid type");
 	}
 
 	@Override
 	public String visitIntLitExpr(codeiumParser.IntLitExprContext ctx) {
 		if (Objects.equals(this.exprType, "int")) {
-			this.exprSubject = this.gen.generateVariable("int");
-			return this.gen.set(this.exprSubject, Integer.parseInt(ctx.getText()));
+			this.exprVar = this.gen.generateVariable("int");
+			return this.gen.set(this.exprVar, Integer.parseInt(ctx.getText()));
 		}
 		throw new RuntimeException("Invalid type");
 	}
@@ -72,14 +100,14 @@ public class FunctionParser extends codeiumBaseVisitor<String> {
 	public String visitMinMaxExpr(codeiumParser.MinMaxExprContext ctx) {
 		if (Objects.equals(this.exprType, "int")) {
 			String lh = ctx.expr(0).accept(this);
-			String lhVar = this.exprSubject;
+			String lhVar = this.exprVar;
 			String rh = ctx.expr(1).accept(this);
-			String rhVar = this.exprSubject;
+			String rhVar = this.exprVar;
 
 			String operation = "<";
 			if (Objects.equals(ctx.op.getText(), ">>"))
 				operation = ">";
-			this.exprSubject = lhVar;
+			this.exprVar = lhVar;
 			return lh + rh + this.gen.op(lhVar, rhVar, operation);
 		}
 		throw new RuntimeException("Invalid type");
@@ -89,7 +117,7 @@ public class FunctionParser extends codeiumBaseVisitor<String> {
 	public String visitMultExpr(codeiumParser.MultExprContext ctx) {
 		if (Objects.equals(this.exprType, "int")) {
 			String lh = ctx.expr(0).accept(this);
-			String lhVar = this.exprSubject;
+			String lhVar = this.exprVar;
 			if (ctx.expr(0) instanceof codeiumParser.IntLitExprContext
 			&&  ctx.expr(1) instanceof codeiumParser.IntLitExprContext) {
 				int lhv = Integer.parseInt(ctx.expr(0).getText());
@@ -99,18 +127,18 @@ public class FunctionParser extends codeiumBaseVisitor<String> {
 					calc = lhv * rhv;
 				else if (Objects.equals(ctx.op.getText(), "%"))
 					calc = lhv % rhv;
-				this.exprSubject = lhVar;
+				this.exprVar = lhVar;
 				return this.gen.set(lhVar, calc);
 			}
 
 			String rh = ctx.expr(1).accept(this);
-			String rhVar = this.exprSubject;
+			String rhVar = this.exprVar;
 
 			if (!Objects.equals(this.gen.getType(lhVar), this.gen.getType(rhVar))) {
 				throw new RuntimeException("Cannot operate with types " + this.gen.getType(lhVar) + " and " + this.gen.getType(rhVar));
 			}
 
-			this.exprSubject = lhVar;
+			this.exprVar = lhVar;
 			return lh + rh + this.gen.op(lhVar, rhVar, ctx.op.getText() + "=");
 		}
 		throw new RuntimeException("Invalid type");
@@ -120,7 +148,7 @@ public class FunctionParser extends codeiumBaseVisitor<String> {
 	public String visitAddSubExpr(codeiumParser.AddSubExprContext ctx) {
 		if (Objects.equals(this.exprType, "int")) {
 			String lh = ctx.expr(0).accept(this);
-			String lhVar = this.exprSubject;
+			String lhVar = this.exprVar;
 			if (ctx.expr(0) instanceof codeiumParser.IntLitExprContext
 			&&  ctx.expr(1) instanceof codeiumParser.IntLitExprContext) {
 				int lhv = Integer.parseInt(ctx.expr(0).getText());
@@ -128,7 +156,7 @@ public class FunctionParser extends codeiumBaseVisitor<String> {
 				int calc = lhv - rhv;
 				if (Objects.equals(ctx.op.getText(), "+"))
 					calc = lhv + rhv;
-				this.exprSubject = lhVar;
+				this.exprVar = lhVar;
 				return this.gen.set(lhVar, calc);
 			}
 			if (ctx.expr(1) instanceof codeiumParser.IntLitExprContext) {
@@ -137,17 +165,17 @@ public class FunctionParser extends codeiumBaseVisitor<String> {
 				String operation = this.gen.sub(lhVar, rh);
 				if (Objects.equals(ctx.op.getText(), "+"))
 					operation = this.gen.add(lhVar, rh);
-				this.exprSubject = lhVar;
+				this.exprVar = lhVar;
 				return lh + operation;
 			}
 			String rh = ctx.expr(1).accept(this);
-			String rhVar = this.exprSubject;
+			String rhVar = this.exprVar;
 
 			if (!Objects.equals(this.gen.getType(lhVar), this.gen.getType(rhVar))) {
 				throw new RuntimeException("Cannot operate with types " + this.gen.getType(lhVar) + " and " + this.gen.getType(rhVar));
 			}
 
-			this.exprSubject = lhVar;
+			this.exprVar = lhVar;
 			return lh + rh + this.gen.op(lhVar, rhVar, ctx.op.getText() + "=");
 		}
 		throw new RuntimeException("Invalid type");

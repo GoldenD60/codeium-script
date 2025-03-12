@@ -2,11 +2,21 @@ namespace hello {
 	int load() {
 		int n = 3 + 5;
 		{
-			int t = 5;
+			int t = n * 5;
+			{
+				int y = 5;
+				{
+					int z = 5;
+				}
+			}
 		}
-		int y = (5 + 3) + 2 * 7 / 2;
-		/*y += 5;
-		int g = x * number + 3;
+		int y = (5 + 3) + n * 7 / 2;
+		y -= n;
+		y *= 5;
+		int z = -5;
+		z = 7;
+		return z * -135;
+		/*int g = x * number + 3;
 		string text = "Hello World!";
 		selector everyone = @a;
 		tell(everyone, "You're about to die.");

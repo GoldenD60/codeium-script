@@ -17,10 +17,6 @@ public class CodeGenerator {
 		this.scoreboard = namespace + "." + name;
 	}
 
-	public static String build(String... command) {
-		return String.join(" ", command) + "\n";
-	}
-
 	public static String generate() {
 		String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
 		StringBuilder generated = new StringBuilder();
@@ -41,32 +37,43 @@ public class CodeGenerator {
 	}
 
 	public String set(String variable, int value) {
-		return build("scoreboard", "players", "set", variable, this.scoreboard, "" + value);
+		return "scoreboard players set %s %s %d\n".formatted(variable, this.scoreboard, value);
 	}
 
 	public String add(String variable, int value) {
-		return build("scoreboard", "players", "add", variable, this.scoreboard, "" + value);
+		return "scoreboard players add %s %s %d\n".formatted(variable, this.scoreboard, value);
 	}
 
 	public String sub(String variable, int value) {
-		return build("scoreboard", "players", "remove", variable, this.scoreboard, "" + value);
+		return "scoreboard players remove %s %s %d\n".formatted(variable, this.scoreboard, value);
 	}
 
 	public String op(String lh, String rh, String op) {
-		return build("scoreboard", "players", "operation", lh, this.scoreboard, op, rh, this.scoreboard);
+		return "scoreboard players operation %s %s %s %s %s\n".formatted(lh, this.scoreboard, op, rh, this.scoreboard);
 	}
 
-	public String setDataToScoreboard(String path, String type, String variable) {
-		// execute store result storage a:b c int 1 run scoreboard players get c a.b
-		return build("execute", "store", "result", "storage", this.nbt, path, type, "1", "run", "scoreboard", "players", "get", variable, this.scoreboard);
+	public String returnVariable(String variable) {
+		return "return run scoreboard players get %s %s\n".formatted(variable, this.scoreboard);
 	}
 
-	public String setScoreboardToData(String path, String type, String variable) {
-		// execute store result score c a.b run data get storage a:b c
+	public String setDataToScoreboard(String nbt, String type, String variable) {
+		if (!this.variables.containsKey(nbt)) {
+			throw new RuntimeException("Variable \"" + nbt + "\" does not exist");
+		}
 		if (!Objects.equals(type, "int")) {
 			throw new RuntimeException("Invalid type");
 		}
-		return build("execute", "store", "result", "score", variable, this.scoreboard, "run", "data", "get", "storage", this.nbt, path);
+		return "execute store result storage %s %s %s 1 run scoreboard players get %s %s\n".formatted(this.nbt, nbt, type, variable, this.scoreboard);
+	}
+
+	public String setScoreboardToData(String nbt, String type, String variable) {
+		if (!this.variables.containsKey(nbt)) {
+			throw new RuntimeException("Variable \"" + nbt + "\" does not exist");
+		}
+		if (!Objects.equals(type, "int")) {
+			throw new RuntimeException("Invalid type");
+		}
+		return "execute store result score %s %s run data get storage %s %s\n".formatted(variable, this.scoreboard, this.nbt, nbt);
 	}
 
 	public void declareVariable(String name, String type) {
@@ -77,6 +84,6 @@ public class CodeGenerator {
 	}
 
 	public String create() {
-		return build("scoreboard", "objectives", "add", this.scoreboard, "dummy");
+		return "scoreboard objectives add %s dummy\n".formatted(this.scoreboard);
 	}
 }

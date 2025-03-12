@@ -38,10 +38,10 @@ expr: '(' expr ')'								# ParenExpr
 	| StrLit									# StrLitExpr
 	| Ident										# IdentExpr;
 
-instruction: scope													# InstScope
-		   | decl '=' expr ';'										# InstDeclaration
-		   | Ident op=('+' | '-' | '*' | '/' | '%')? '=' expr ';'	# InstAssignment
-		   | funcCall ';'											# InstCall;
+instruction: scope															# InstScope
+		   | decl '=' expr ';'												# InstDeclaration
+		   | Ident op=('+=' | '-=' | '*=' | '/=' | '%=' | '=')? expr ';'	# InstAssignment
+		   | funcCall ';'													# InstCall;
 return: Return expr? ';';
 
 Namespace: 'namespace';
@@ -59,5 +59,5 @@ Tell: 'tell';
 Ident: [a-zA-Z_][a-zA-Z0-9_]*;
 SelectorLit: '@' ('a' | 'e' | 'n' | 'p' | 'r' | 's');
 IntLit: [0-9]+
-   | ('+' | '-') [0-9]+;
+	  | ('+' | '-') [0-9]+;
 StrLit: '"' ( ~[\\"\n\r] | '\\' [\\"] )* '"'  ;
