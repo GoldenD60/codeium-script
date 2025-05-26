@@ -6,8 +6,7 @@ import org.goldend60.codeiumscript.antlr.codeiumParser;
 import java.nio.file.Path;
 
 public class ProgParser extends codeiumBaseListener {
-	private String namespace = "unknown";
-	private Path out;
+	private String namespace;
 	private final Path root;
 
 	public ProgParser(Path output) {
@@ -21,8 +20,6 @@ public class ProgParser extends codeiumBaseListener {
 
 	private void setNamespace(String namespace) {
 		this.namespace = namespace;
-		this.out = Path.of(this.root.toString(), "data", this.namespace, "function");
-		this.out.toFile().mkdirs();
 	}
 
 	@Override
@@ -38,12 +35,11 @@ public class ProgParser extends codeiumBaseListener {
 
 	@Override
 	public void exitNamespace(codeiumParser.NamespaceContext ctx) {
-		this.out = this.root;
 		this.namespace = "";
 	}
 
 	private void generate(codeiumParser.FuncDefContext ctx) {
-		FunctionParser gen = new FunctionParser(this.namespace, this.out);
+		FunctionParser gen = new FunctionParser(this.namespace, this.root);
 		String content = ctx.accept(gen);
 		System.out.println(content);
 		ctx.exitRule(this);

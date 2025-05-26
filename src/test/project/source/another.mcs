@@ -1,0 +1,10 @@
+namespace another {
+	int load() {
+		int f = 5 * 3;
+		return f / 2;
+	}
+
+	int another_function() {
+		return 6;
+	}
+}

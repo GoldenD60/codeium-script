@@ -15,23 +15,15 @@ namespace hello {
 		y *= 5;
 		int z = -5;
 		z = 7;
-		return z * -135;
-		/*int g = x * number + 3;
-		string text = "Hello World!";
-		selector everyone = @a;
-		tell(everyone, "You're about to die.");
-		kill(@e);
+		return z;
 	}
 
-	int myFunction(int c) {
-		return c;
+	int strings() {
+		string s = "\"Hello, World\"!" + "e\"f\"";
+		return 5;
 	}
 
-	int typeFunction() {
-		return "Hello there, \"David\"!";
-	}
-
-	int getMyNumber() {
-		return 5;*/
+	int my_function() {
+		return 5;
 	}
 }

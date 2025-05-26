@@ -19,8 +19,8 @@ scope: '{' instruction* return? '}';
 
 args: expr (',' expr)*;
 
-funcDef: Int Load '(' ')' scope					# LoadFunction
-	   | decl '(' (decl (',' decl)*)? ')' scope	# TypeFunction;
+funcDef: Int Load '(' ')' scope						# LoadFunction
+	   | decl '(' (decl (',' decl)*)? ')' scope		# TypeFunction;
 
 funcCall: SelectorLit ('.' Ident)+ '(' args? ')'	# SelectorCall
 		| Kill '(' args? ')'						# KillCall
@@ -28,7 +28,7 @@ funcCall: SelectorLit ('.' Ident)+ '(' args? ')'	# SelectorCall
 		| Ident ('.' Ident)+ '(' args? ')'			# TypeCall;
 
 expr: '(' expr ')'								# ParenExpr
-	| expr op=('>>' | '<<') expr				# MinMaxExpr
+	| expr op=('max' | 'min') expr				# MinMaxExpr
 	| expr op=('*' | '/' | '%') expr			# MultExpr
 	| expr op=('+' | '-') expr					# AddSubExpr
 	| expr op=( '>=' | '<=' | '>' | '<' ) expr	# CompExpr
@@ -38,10 +38,10 @@ expr: '(' expr ')'								# ParenExpr
 	| StrLit									# StrLitExpr
 	| Ident										# IdentExpr;
 
-instruction: scope															# InstScope
-		   | decl '=' expr ';'												# InstDeclaration
-		   | Ident op=('+=' | '-=' | '*=' | '/=' | '%=' | '=')? expr ';'	# InstAssignment
-		   | funcCall ';'													# InstCall;
+instruction: scope																# InstScope
+		   | decl '=' expr ';'													# InstDeclaration
+		   | Ident op=('+=' | '-=' | '*=' | '/=' | '%=' | '=' | '><')? expr ';'	# InstAssignment
+		   | funcCall ';'														# InstCall;
 return: Return expr? ';';
 
 Namespace: 'namespace';
